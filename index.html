@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>교우관계 설문조사 분석 대시보드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Harmony -->
+    <!-- Application Structure Plan: A thematic single-page dashboard. Starts with an 'At a Glance' overview, then allows users to navigate to focused sections: 'Relationship Network', 'Classroom Life', 'Emotions & Conflict', and 'Suggestions'. This structure moves from a high-level summary to detailed, thematic exploration, which is more intuitive for a teacher analyzing class dynamics than a linear report. Key interactions include monthly/activity filters for charts and clickable cards to reveal details, promoting discovery without overwhelming the user. -->
+    <!-- Visualization & Content Choices:
+        - Report Info: Monthly preferred friends. Goal: Compare/Change. Viz: Interactive horizontal bar chart (Chart.js) with month/activity toggles. Justification: Handles lists of names well and the interaction allows for direct comparison.
+        - Report Info: Key student roles. Goal: Organize/Inform. Viz: Styled HTML cards. Justification: More readable and engaging for qualitative descriptions than a complex chart.
+        - Report Info: Activity roles & conflict styles (distributions). Goal: Compare proportions. Viz: Donut and Bar charts (Chart.js). Justification: Standard, effective way to show categorical distribution.
+        - Report Info: Recommendations. Goal: Inform/Organize. Viz: Styled list with Unicode icons. Justification: Clear, scannable, and actionable presentation for textual suggestions.
+        - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f8f7f4;
+            color: #333;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 400px;
+            max-height: 50vh;
+        }
+        .nav-link {
+            transition: all 0.3s;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #0d9488;
+            border-bottom-color: #0d9488;
+        }
+        .section-title::after {
+            content: '';
+            display: block;
+            width: 50px;
+            height: 3px;
+            background-color: #14b8a6;
+            margin-top: 8px;
+        }
+        .btn-filter {
+            transition: all 0.2s;
+        }
+        .btn-filter.active {
+            background-color: #0d9488;
+            color: white;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+    </style>
+</head>
+<body class="bg-[#F8F7F4]">
+
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <h1 class="text-xl font-bold text-teal-700">교우관계 분석 대시보드</h1>
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#overview" class="nav-link font-medium text-gray-600 px-2 py-1">한눈에 보기</a>
+                    <a href="#network" class="nav-link font-medium text-gray-600 px-2 py-1">관계망 분석</a>
+                    <a href="#life" class="nav-link font-medium text-gray-600 px-2 py-1">교실 생활 모습</a>
+                    <a href="#emotion" class="nav-link font-medium text-gray-600 px-2 py-1">감정과 갈등</a>
+                    <a href="#suggestion" class="nav-link font-medium text-gray-600 px-2 py-1">종합 제언</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-4 md:p-8">
+
+        <section id="overview" class="mb-16 scroll-mt-20">
+            <h2 class="text-3xl font-bold text-gray-800 mb-2 section-title">한눈에 보는 우리 반</h2>
+            <p class="text-lg text-gray-600 mb-8">
+                지난 3개월간의 설문조사 결과를 통해 우리 반의 교우관계 특징을 요약했습니다. 데이터는 긍정적이고 안정적인 관계망이 형성되어 있음을 보여줍니다. 이 섹션에서 주요 지표와 월별 선호 친구 변화 추이를 확인해 보세요.
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 text-center">
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-lg font-semibold text-gray-500 mb-2">학급 분위기</h3>
+                    <p class="text-4xl font-bold text-teal-600">긍정적</p>
+                    <p class="text-sm text-gray-500 mt-2">대부분 '서로 돕는 분위기'로 평가</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-lg font-semibold text-gray-500 mb-2">가장 하고 싶은 활동</h3>
+                    <p class="text-4xl font-bold text-teal-600">피구</p>
+                    <p class="text-sm text-gray-500 mt-2">3개월간 압도적 1위</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-lg font-semibold text-gray-500 mb-2">주요 갈등 해결 방식</h3>
+                    <p class="text-4xl font-bold text-teal-600">사과/대화</p>
+                    <p class="text-sm text-gray-500 mt-2">"내가 먼저 사과해요"가 가장 많음</p>
+                </div>
+            </div>
+             <div class="bg-white p-6 rounded-xl shadow-md">
+                <h3 class="text-xl font-bold text-gray-700 mb-4">월별 선호 친구 변화 (놀이/모둠)</h3>
+                <div class="flex justify-center space-x-2 mb-4">
+                    <button id="btn-month-may" class="btn-filter px-4 py-2 rounded-full text-sm font-semibold bg-gray-200 text-gray-700">5월</button>
+                    <button id="btn-month-jun" class="btn-filter px-4 py-2 rounded-full text-sm font-semibold bg-gray-200 text-gray-700">6월</button>
+                    <button id="btn-month-jul" class="btn-filter px-4 py-2 rounded-full text-sm font-semibold bg-gray-200 text-gray-700">7월</button>
+                    <button id="btn-month-total" class="btn-filter px-4 py-2 rounded-full text-sm font-semibold bg-gray-200 text-gray-700 active">종합</button>
+                </div>
+                <div class="flex justify-center space-x-2 mb-4">
+                     <button id="btn-activity-play" class="btn-filter px-4 py-2 rounded-full text-sm font-semibold bg-gray-200 text-gray-700 active">놀이</button>
+                     <button id="btn-activity-group" class="btn-filter px-4 py-2 rounded-full text-sm font-semibold bg-gray-200 text-gray-700">모둠 활동</button>
+                </div>
+                <div class="chart-container">
+                    <canvas id="preferredFriendsChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <section id="network" class="mb-16 scroll-mt-20">
+            <h2 class="text-3xl font-bold text-gray-800 mb-2 section-title">우리 반 관계망 분석</h2>
+             <p class="text-lg text-gray-600 mb-8">
+                우리 반에는 긍정적인 관계를 이끄는 핵심 친구들이 있습니다. 이 섹션에서는 어떤 친구들이 자주 언급되었고, 어떤 긍정적인 역할을 하는지 살펴봅니다. 이들은 우리 반의 안정적인 관계망을 만드는 데 중요한 역할을 합니다.
+            </p>
+            <div class="bg-white p-6 rounded-xl shadow-md">
+                <h3 class="text-xl font-bold text-gray-700 mb-4">관계의 중심, 핵심 친구들</h3>
+                <p class="text-gray-600 mb-6">아래 번호의 친구들은 3개월간 다양한 긍정적 역할로 꾸준히 언급되었습니다. 이들은 학급의 구심점 역할을 하며 긍정적인 분위기를 형성합니다.</p>
+                <div class="flex flex-wrap justify-center gap-4">
+                    <div class="bg-teal-50 text-teal-800 font-bold px-6 py-3 rounded-full shadow-sm">3번</div>
+                    <div class="bg-teal-50 text-teal-800 font-bold px-6 py-3 rounded-full shadow-sm">7번</div>
+                    <div class="bg-teal-50 text-teal-800 font-bold px-6 py-3 rounded-full shadow-sm">9번</div>
+                    <div class="bg-teal-50 text-teal-800 font-bold px-6 py-3 rounded-full shadow-sm">10번</div>
+                    <div class="bg-teal-50 text-teal-800 font-bold px-6 py-3 rounded-full shadow-sm">12번</div>
+                    <div class="bg-teal-50 text-teal-800 font-bold px-6 py-3 rounded-full shadow-sm">13번</div>
+                    <div class="bg-teal-50 text-teal-800 font-bold px-6 py-3 rounded-full shadow-sm">14번</div>
+                    <div class="bg-teal-50 text-teal-800 font-bold px-6 py-3 rounded-full shadow-sm">16번</div>
+                    <div class="bg-teal-50 text-teal-800 font-bold px-6 py-3 rounded-full shadow-sm">17번</div>
+                    <div class="bg-teal-50 text-teal-800 font-bold px-6 py-3 rounded-full shadow-sm">18번</div>
+                    <div class="bg-teal-50 text-teal-800 font-bold px-6 py-3 rounded-full shadow-sm">19번</div>
+                    <div class="bg-teal-50 text-teal-800 font-bold px-6 py-3 rounded-full shadow-sm">20번</div>
+                    <div class="bg-teal-50 text-teal-800 font-bold px-6 py-3 rounded-full shadow-sm">21번</div>
+                    <div class="bg-teal-50 text-teal-800 font-bold px-6 py-3 rounded-full shadow-sm">22번</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="life" class="mb-16 scroll-mt-20">
+            <h2 class="text-3xl font-bold text-gray-800 mb-2 section-title">교실 생활 모습</h2>
+             <p class="text-lg text-gray-600 mb-8">
+                학생들은 놀이와 모둠 활동 속에서 어떻게 상호작용할까요? 이 섹션에서는 학생들이 주로 맡는 역할과 자신의 의견이 얼마나 반영된다고 느끼는지 시각적으로 보여줍니다.
+            </p>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-xl font-bold text-gray-700 mb-4 text-center">놀이 활동 시 역할</h3>
+                    <div class="chart-container" style="height: 300px; max-height: 40vh;">
+                        <canvas id="playRolesChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-xl font-bold text-gray-700 mb-4 text-center">모둠 활동 시 역할</h3>
+                    <div class="chart-container" style="height: 300px; max-height: 40vh;">
+                        <canvas id="groupRolesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="emotion" class="mb-16 scroll-mt-20">
+            <h2 class="text-3xl font-bold text-gray-800 mb-2 section-title">감정과 갈등 다루기</h2>
+            <p class="text-lg text-gray-600 mb-8">
+                친구 관계에서는 갈등과 다양한 감정이 생기기 마련입니다. 우리 반 학생들은 갈등 상황이나 친구의 슬픔, 자신의 화를 어떻게 대처하고 있을까요? 이 섹션에서 학생들의 성숙한 대처 방식들을 확인할 수 있습니다.
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                 <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-xl font-bold text-gray-700 mb-4">갈등 해결 방식</h3>
+                    <div class="chart-container" style="height: 350px; max-height: 45vh;">
+                         <canvas id="conflictResolutionChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-xl font-bold text-gray-700 mb-4">친구가 슬퍼할 때</h3>
+                     <div class="chart-container" style="height: 350px; max-height: 45vh;">
+                         <canvas id="friendSadChart"></canvas>
+                    </div>
+                </div>
+                 <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-xl font-bold text-gray-700 mb-4">자신이 화났을 때</h3>
+                     <div class="chart-container" style="height: 350px; max-height: 45vh;">
+                         <canvas id="selfAngryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section id="suggestion" class="scroll-mt-20">
+            <h2 class="text-3xl font-bold text-gray-800 mb-2 section-title">종합 제언: 더 나은 우리 반을 위하여</h2>
+            <p class="text-lg text-gray-600 mb-8">
+                분석 결과를 바탕으로, 우리 반의 긍정적인 관계를 더욱 발전시키기 위한 활동들을 제안합니다. 이 제언들은 학생들의 요구와 현재 관계 특성을 고려하여 구성되었습니다.
+            </p>
+            <div class="bg-white p-8 rounded-xl shadow-md">
+                 <div class="space-y-6">
+                    <div class="flex items-start">
+                        <div class="bg-teal-100 text-teal-700 font-bold p-3 rounded-full mr-4">🤝</div>
+                        <div>
+                            <h4 class="font-bold text-lg text-gray-800">신체 활동 및 팀워크 증진</h4>
+                            <p class="text-gray-600">선호도가 높은 피구, 2인 3각 등 팀워크 기반 활동을 정기적으로 진행하여 친밀감과 협동심을 높입니다.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="bg-teal-100 text-teal-700 font-bold p-3 rounded-full mr-4">❤️</div>
+                        <div>
+                            <h4 class="font-bold text-lg text-gray-800">감정 표현 및 공감 능력 심화</h4>
+                            <p class="text-gray-600">역할극, 감정 카드 등을 활용해 서로의 감정을 더 깊이 이해하고 건강하게 표현하는 방법을 배웁니다.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                         <div class="bg-teal-100 text-teal-700 font-bold p-3 rounded-full mr-4">🗣️</div>
+                        <div>
+                            <h4 class="font-bold text-lg text-gray-800">갈등 해결 역량 강화</h4>
+                            <p class="text-gray-600">'어기바 인사약' 같은 긍정적 방식을 장려하고, 비폭력 대화 기법 등 구체적인 방법을 교육합니다.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                         <div class="bg-teal-100 text-teal-700 font-bold p-3 rounded-full mr-4">🎭</div>
+                        <div>
+                            <h4 class="font-bold text-lg text-gray-800">모둠 활동 역할 다양화</h4>
+                            <p class="text-gray-600">모든 학생이 리더, 기록 등 다양한 역할을 경험하도록 하여 참여도와 성취감을 높입니다.</p>
+                        </div>
+                    </div>
+                     <div class="flex items-start">
+                         <div class="bg-teal-100 text-teal-700 font-bold p-3 rounded-full mr-4">☕</div>
+                        <div>
+                            <h4 class="font-bold text-lg text-gray-800">자유로운 소통의 장 마련</h4>
+                            <p class="text-gray-600">'대화하기 행사' 등 자유롭게 소통하며 서로를 알아가는 기회를 정기적으로 가집니다.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-8 border-t pt-6">
+                    <p class="text-center text-gray-700 italic">"이 학급의 교우 관계는 마치 잘 짜인 오케스트라와 같습니다. 각 악기는 자신의 역할을 충실히 수행하며 아름다운 화음을 만들어냅니다. 이제 필요한 것은 더욱 다채로운 악곡을 연주하며, 모든 악기가 빛날 수 있도록 새로운 무대를 마련해 주는 것입니다."</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const surveyData = {
+                preferredFriends: {
+                    may: {
+                        play: ['22', '18', '12', '19', '17', '10', '3', '16', '7', '4', '5'],
+                        group: ['22', '12', '18', '20', '17', '10', '3', '16', '14', '13', '8', '7', '9', '15', '21']
+                    },
+                    jun: {
+                        play: ['22', '12', '19', '14', '13', '9', '17', '3', '10', '7', '20'],
+                        group: ['22', '12', '19', '14', '13', '9', '17', '3', '10', '20']
+                    },
+                    jul: {
+                        play: ['22', '12', '19', '13', '8', '3', '16', '10', '7', '20', '9', '15', '14'],
+                        group: ['22', '12', '19', '13', '8', '3', '16', '10', '7', '20', '9', '14', '15']
+                    },
+                    total: {
+                        play: ['12', '19', '22', '3', '7', '10', '13', '14', '16', '17', '18', '20'],
+                        group: ['12', '19', '22', '3', '7', '10', '13', '14', '16', '17', '18', '20', '21']
+                    }
+                },
+                roles: {
+                    play: {
+                        labels: ['규칙 따라 함께 놀기', '놀이 제안/주도', '지켜보다 참여', '혼자 놀기'],
+                        data: [55, 25, 15, 5]
+                    },
+                    group: {
+                        labels: ['의견 제안/주도', '의견 정리/기록', '준비물/도움', '의견 따르기', '특별 역할 없음'],
+                        data: [35, 30, 15, 15, 5]
+                    }
+                },
+                conflict: {
+                    labels: ['먼저 사과', '대화로 해결', '어기바 인사약 사용', '선생님께 알림', '혼자 진정', '회피/침묵'],
+                    data: [40, 25, 15, 8, 7, 5]
+                },
+                emotionResponse: {
+                    friendSad: {
+                        labels: ['위로해주기', '이유 물어보기', '기분 전환시키기', '선생님께 알림'],
+                        data: [50, 30, 15, 5]
+                    },
+                    selfAngry: {
+                        labels: ['혼자 진정하기', '기분 이야기하기', '다른 활동으로 전환'],
+                        data: [60, 25, 15]
+                    }
+                }
+            };
+            
+            let preferredFriendsChart;
+            let currentMonth = 'total';
+            let currentActivity = 'play';
+
+            const chartColors = {
+                bar: ['#2dd4bf', '#34d399', '#6ee7b7', '#a7f3d0'],
+                donut: ['#14b8a6', '#2dd4bf', '#5eead4', '#99f6e4', '#ccfbf1'],
+                horizontalBar: ['#0d9488', '#14b8a6', '#2dd4bf', '#5eead4', '#99f6e4']
+            };
+
+            const createOrUpdatePreferredFriendsChart = () => {
+                const data = surveyData.preferredFriends[currentMonth][currentActivity];
+                const counts = data.map((_, index) => data.length - index);
+                const labels = data.map(id => `${id}번`);
+
+                const ctx = document.getElementById('preferredFriendsChart').getContext('2d');
+                if (preferredFriendsChart) {
+                    preferredFriendsChart.destroy();
+                }
+                preferredFriendsChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: '언급 빈도 (가중치)',
+                            data: counts,
+                            backgroundColor: chartColors.bar[0],
+                            borderColor: chartColors.bar[0],
+                            borderWidth: 1,
+                            borderRadius: 5
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: (context) => `${context.dataset.label}: ${context.raw}`
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                title: { display: true, text: '언급 순위별 가중치' }
+                            },
+                            y: {
+                                grid: { display: false }
+                            }
+                        }
+                    }
+                });
+            };
+
+            const createDonutChart = (canvasId, data, title) => {
+                const ctx = document.getElementById(canvasId).getContext('2d');
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: title,
+                            data: data.data,
+                            backgroundColor: chartColors.donut,
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom' },
+                            tooltip: {
+                                callbacks: {
+                                    label: (context) => `${context.label}: ${context.raw}%`
+                                }
+                            }
+                        }
+                    }
+                });
+            };
+            
+            const createHorizontalBarChart = (canvasId, data, label) => {
+                const ctx = document.getElementById(canvasId).getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: label,
+                            data: data.data,
+                            backgroundColor: chartColors.horizontalBar,
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: (context) => `${context.raw}%`
+                                }
+                            }
+                        },
+                         scales: {
+                            x: {
+                                beginAtZero: true,
+                                title: { display: true, text: '응답 비율 (%)' }
+                            }
+                        }
+                    }
+                });
+            };
+
+            createOrUpdatePreferredFriendsChart();
+            createDonutChart('playRolesChart', surveyData.roles.play, '놀이 역할');
+            createDonutChart('groupRolesChart', surveyData.roles.group, '모둠 역할');
+            createHorizontalBarChart('conflictResolutionChart', surveyData.conflict, '응답 비율');
+            createHorizontalBarChart('friendSadChart', surveyData.emotionResponse.friendSad, '응답 비율');
+            createHorizontalBarChart('selfAngryChart', surveyData.emotionResponse.selfAngry, '응답 비율');
+
+            const monthButtons = {
+                may: document.getElementById('btn-month-may'),
+                jun: document.getElementById('btn-month-jun'),
+                jul: document.getElementById('btn-month-jul'),
+                total: document.getElementById('btn-month-total'),
+            };
+
+            const activityButtons = {
+                play: document.getElementById('btn-activity-play'),
+                group: document.getElementById('btn-activity-group'),
+            };
+
+            Object.entries(monthButtons).forEach(([key, btn]) => {
+                btn.addEventListener('click', () => {
+                    currentMonth = key;
+                    Object.values(monthButtons).forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    createOrUpdatePreferredFriendsChart();
+                });
+            });
+
+            Object.entries(activityButtons).forEach(([key, btn]) => {
+                btn.addEventListener('click', () => {
+                    currentActivity = key;
+                    Object.values(activityButtons).forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    createOrUpdatePreferredFriendsChart();
+                });
+            });
+
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('main section');
+
+            window.addEventListener('scroll', () => {
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    if (pageYOffset >= sectionTop - 80) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href') === `#${current}`) {
+                        link.classList.add('active');
+                    }
+                });
+            });
+            
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    document.querySelector(link.getAttribute('href')).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+</html>
